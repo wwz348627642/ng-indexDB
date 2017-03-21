@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+</head>
+<body ng-controller="mainController">
+  <div>{{ test }}</div>
+  <script src="js/angular.min.js"></script>
+  <script>
+    angular.module('app', [
+      'mainController'
+    ]);
+
+    angular.module('mainController', ['indexDB'])
+      .controller('mainController', ['$scope', '$rootScope', 'indexDB',
+        function($scope, $rootScope, indexDB){
+          $scope.test = indexDB.canUse();
+          let index = [{ name: 'user', unique: true }, { name: 'age', unique: false }]
+          let data = { user: '4444', age: 26 }
+          indexDB.open({ index: index })
+                 // .then(res => indexDB.addData(data))
+                 .then(index => indexDB.forEachData(4))
+                 .then(result => console.log(result))
+                 .catch(error => console.log(error))
+      }])
+
+    angular.module('indexDB', [])
+      .factory('indexDB', ['$rootScope', function ($rootScope) {
+        return {
+          canUse: function () {
+            window.indexedDB = window.indexedDB || 
+                               window.mozIndexedDB || 
+                               window.webkitIndexedDB || 
+                               window.msIndexedDB;
+            window.IDBTransaction = window.IDBTransaction || 
+                                    window.webkitIDBTransaction || 
+                                    window.msIDBTransaction || 
+                                    { READ_WRITE: "readwrite" };
+            window.IDBKeyRange = window.IDBKeyRange || 
+                                 window.webkitIDBKeyRange || 
+                                 window.msIDBKeyRange; 
+            if (!window.indexedDB) {
+              return false;
+            } else {
+              return true;
+            }
+          },
+          open: function (config) {
+            return new Promise(function(resolve, reject) {
+              if (config === undefined) {
+                config = {}
+              }
+              var openRequest = window.indexedDB.open(config.name || 'test', config.version || 1);
+              openRequest.onupgradeneeded = function (event) {
+                var db = event.target.result;
+                // 如果没有该存储对象存在，再创建新的
+                if (!db.objectStoreNames.contains(config.database || 'table')) { 
+                  var objectStore = db.createObjectStore(config.database || 'table',
+                    config.mainKey || { autoIncrement: true });
+                  if (config.index) {
+                    config.index.forEach(function(item) {
+                      if (item.name && typeof item.unique == 'boolean') {
+                        objectStore.createIndex(item.name, item.name, { unique: item.unique }); 
+                      }
+                    })
+                  }
+                }
+              }
+
+              openRequest.onsuccess = function (event) {
+                window._transaction = event.target.result.transaction([config.database || 'table'], 'readwrite');
+                resolve(event.target.result)
+              }
+
+              openRequest.onerror = function () {
+                reject(new Error('oepn indexDB error'))
+              }
+
+            })
+          },
+          addData: function (data) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function (resolve, reject) {
+              var request = objectStore.add(data);
+              request.onsuccess = function (event) {
+                resolve(event.target.result);
+              }
+              request.onerror = function (event) {
+                reject(event.target.error);
+              } 
+            })       
+          },
+          getData: function (index) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function (resolve, reject) {
+              if (isNaN(index)) {
+                reject('getData must be have a argument that is be parsed number')
+              }
+
+              var request = objectStore.get(index);
+              request.onsuccess = function (event) {
+                resolve(event.target.result);
+              }
+              request.onerror = function (event) {
+                reject(event.target.error);
+              }
+            })
+          },
+          putData: function (index, data) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function (resolve, reject) {
+              if (isNaN(index)) {
+                reject('putData must be have a argument that is be parsed number')
+              }
+
+              var request = objectStore.put(data, index);
+              request.onsuccess = function (event) {
+                resolve(event.target.result);
+              }
+
+              request.onerror = function (event) {
+                reject(event.target.error);
+              }
+            })
+          },
+          deleteData: function (index) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function (resolve, reject) {
+              if (isNaN(index)) {
+                reject('deleteData must be have a argument that is be parsed number')
+              }
+
+              var request = objectStore.delete(index);
+              request.onsuccess = function (event) {
+                resolve('delete success');
+              }
+              request.onerror = function (event) {
+                reject(event.target.error);
+              }
+            })
+          },
+          getIndexData: function (indexName, data) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function(resolve, reject) {
+              var index = objectStore.index(indexName);
+              var obj = index.get(data);
+              obj.onsuccess = function (event) {
+                resolve(event.target.result)
+              }
+
+              obj.onerror = function (event) {
+                reject(event.target.error);
+              }
+            })
+          },
+          forEachData: function (keyName, dir) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+              var cursor = objectStore.openCursor(keyName, dir || 'next')
+              var arr = [];
+          
+              cursor.onsuccess = function (event) {
+                var res = event.target.result
+                if (res) {
+                  
+                  res.continue()
+                }
+              }        
+
+          }
+
+        }
+      }])
+    
+  </script>
+</body>
+
+
+</html>
