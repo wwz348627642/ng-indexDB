@@ -27,14 +27,16 @@ indexDB.canUse() // true or false
   }
 ``` 
 
-##### addData(data): Promise   success function return index
+##### addData(data): Promise  
+- success function return index
 ```
 indexDB.open()
        .then(() => indexDB.addData({ name: 'wilson', age: 25 }))
        .then(index => console.log(index))
 ```
 
-##### getData(index): Promise  success function return data
+##### getData(index): Promise  
+- success function return data
 ```
 indexDB.open()
        .then(() => indexDB.getData(1))
@@ -42,21 +44,24 @@ indexDB.open()
 
 ```
 
-##### putData(index, data): Promise   success function return index
+##### putData(index, data): Promise   
+- success function return index
 ```
 indexDB.open()
        .then(() => indexDB.putData(1, { name: 'wang', age: 1 }))
        .then(index => console.log(index))
 ```
 
-##### deleteData(index): Promise  success function return void
+##### deleteData(index): Promise  
+- success function return void
 ```
 indexDB.open()
        .then(() => indexDB.delete(1))
 
 ```
 
-##### forEachData(keyname, dir): Promise success   function return [{ key: '', data: '' }] || [];
+##### forEachData(keyname, dir): Promise 
+- success function return [{ key: '', data: '' }] || [];
 
 ```
 // if (keyname) return item data;
@@ -68,7 +73,8 @@ indexDB.open()
        .then(result => console.log(result))
 ```
 
-##### getIndexData(indexName, dataFieldset): Promise  success function return data
+##### getIndexData(indexName, dataFieldset): Promise  
+- success function return data
 ```
 // when first open db use index, your can use the method
 // use '===', not '=='
@@ -78,7 +84,8 @@ indexDB.open({ index: [ { name: 'name', unique: false } ] })
        .then(result => console.log(result))
 ```
 
-##### getOnlyIndexKey(indexName, indexKey, dir): Promise    success function return [{ key:'', data: '' }] || [];
+##### getOnlyIndexKey(indexName, indexKey, dir): Promise    
+- success function return [{ key:'', data: '' }] || [];
 ```
 // when first open db use index, your can use the method, like mySql groub By
 // use '===', not '=='
@@ -95,6 +102,12 @@ indexDB.open({ index: [ { name: 'name', unique: false } ] })
 indexDB.deleteDB('test');
 
 ```
+
+
+
+
+
+
 
 
 
