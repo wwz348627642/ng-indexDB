@@ -6,8 +6,10 @@
 </head>
 <body ng-controller="mainController">
   <div>{{ test }}</div>
+
   <script src="js/angular.min.js"></script>
   <script>
+
     angular.module('app', [
       'mainController'
     ]);
@@ -15,14 +17,27 @@
     angular.module('mainController', ['indexDB'])
       .controller('mainController', ['$scope', '$rootScope', 'indexDB',
         function($scope, $rootScope, indexDB){
-          $scope.test = indexDB.canUse();
+
+
           let index = [{ name: 'user', unique: true }, { name: 'age', unique: false }]
-          let data = { user: '4444', age: 26 }
-          indexDB.open({ index: index })
-                 // .then(res => indexDB.addData(data))
-                 .then(index => indexDB.forEachData(4))
-                 .then(result => console.log(result))
-                 .catch(error => console.log(error))
+          let data = { user: '12424', age: 26 }
+
+
+          $scope.test = indexDB.canUse();
+
+          if ($scope.test) {
+
+            // indexDB.open({ index: index })
+            //        // .then(res => indexDB.addData(data))
+            //        // .then(index => indexDB.getIndexData('user', '12424'))
+            //        // .then(() => indexDB.forEachData())
+            //        .then(() => indexDB.getOnlyIndexKey('age', 26))
+            //        // .then(() => indexDB.deleteData(1))
+            //        .then(result => console.log(result))
+            //        .catch(error => console.log(error))
+
+            indexDB.deleteDB('test')
+          }
       }])
 
     angular.module('indexDB', [])
@@ -54,7 +69,7 @@
               var openRequest = window.indexedDB.open(config.name || 'test', config.version || 1);
               openRequest.onupgradeneeded = function (event) {
                 var db = event.target.result;
-                // 如果没有该存储对象存在，再创建新的
+                // if objectStore not find, open new objectStore
                 if (!db.objectStoreNames.contains(config.database || 'table')) { 
                   var objectStore = db.createObjectStore(config.database || 'table',
                     config.mainKey || { autoIncrement: true });
@@ -140,11 +155,11 @@
               }
             })
           },
-          getIndexData: function (indexName, data) {
+          getIndexData: function (indexName, fieldset) {
             var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
             return new Promise(function(resolve, reject) {
               var index = objectStore.index(indexName);
-              var obj = index.get(data);
+              var obj = index.get(fieldset);
               obj.onsuccess = function (event) {
                 resolve(event.target.result)
               }
@@ -156,24 +171,57 @@
           },
           forEachData: function (keyName, dir) {
             var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function (resolve, reject) {
               var cursor = objectStore.openCursor(keyName, dir || 'next')
               var arr = [];
-          
               cursor.onsuccess = function (event) {
                 var res = event.target.result
+                // var copy_res = angular.copy(res);
                 if (res) {
-                  
+                  var obj = {
+                    key: res.primaryKey,
+                    data: res.value
+                  }
+                  arr.push(obj);
                   res.continue()
+                } else {
+                  resolve(arr)
                 }
-              }        
+              }  
+            })
+          },
+          getOnlyIndexKey: function (indexName, indexKey, dir) {
+            var objectStore = window._transaction.objectStore(window._transaction.objectStoreNames[0]);
+            return new Promise(function (resolve, reject) {
+              var index = objectStore.index(indexName);
+              var range =  window.IDBKeyRange.only(indexKey);
+              var cursor = index.openCursor(range, dir || 'next');
+              var arr = [];
+              cursor.onsuccess = function (event) {
+                var res = event.target.result;
+                if (res) {
+                  var obj = {
+                    key: res.primaryKey,
+                    data: res.value
+                  }
+                  arr.push(obj);
+                  res.continue();
+                } else {
+                  resolve(arr)
+                }
+              }
 
+              cursor.onerror = function (event) {
+                reject(event.target.error);
+              }
+            })
+          },
+          deleteDB: function (dbName) {
+            window.indexedDB.deleteDatabase(dbName);
           }
-
         }
       }])
     
   </script>
 </body>
-
-
 </html>
